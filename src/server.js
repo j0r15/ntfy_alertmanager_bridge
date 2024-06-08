@@ -10,14 +10,18 @@ const { execSync } = require("child_process");
 const config = {
   port: process.env.PORT || 30000,
   ntfyServer: process.env.NTFY_SERVER_ADDRESS || "http://localhost:30001",
+  ntfyToken: process.env.NTFY_TOKEN || undefined,
   tempFolderPath: undefined,
 };
 
-fs.mkdtemp(path.join(os.tmpdir(), "ntfy_alertmanager_bridge"), (err, folder) => {
-  if (err) throw err;
-  console.log("created temp folder: " + folder);
-  config.tempFolderPath = folder;
-});
+fs.mkdtemp(
+  path.join(os.tmpdir(), "ntfy_alertmanager_bridge"),
+  (err, folder) => {
+    if (err) throw err;
+    console.log("created temp folder: " + folder);
+    config.tempFolderPath = folder;
+  },
+);
 
 const app = new Koa();
 app.use(bodyParser());
@@ -37,7 +41,9 @@ function logIncomingRequest(ctx) {
   const now = new Date();
   const logFileName = path.join(
     config.tempFolderPath,
-    `req-${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}T${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}.log`
+    `req-${now.getFullYear()}-${
+      now.getMonth() + 1
+    }-${now.getDate()}T${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}.log`,
   );
   fs.writeFileSync(logFileName, serialized);
 }
@@ -52,9 +58,15 @@ router
       const tempAlertFilePathForJq = `tmp-alert.json`;
       fs.writeFileSync(tempAlertFilePathForJq, JSON.stringify(x), {});
 
-      const topic = execSync(`jq -r "${ctx.query.topic}" ${tempAlertFilePathForJq}`);
-      const title = execSync(`jq -r "${ctx.query.title}" ${tempAlertFilePathForJq}`);
-      const priority = execSync(`jq -r "${ctx.query.priority}" ${tempAlertFilePathForJq}`);
+      const topic = execSync(
+        `jq -r "${ctx.query.topic}" ${tempAlertFilePathForJq}`,
+      );
+      const title = execSync(
+        `jq -r "${ctx.query.title}" ${tempAlertFilePathForJq}`,
+      );
+      const priority = execSync(
+        `jq -r "${ctx.query.priority}" ${tempAlertFilePathForJq}`,
+      );
       const data = {
         topic: cleanShellOutput(topic.toString()),
         title: cleanShellOutput(title.toString()),
@@ -64,8 +76,14 @@ router
         tags: [],
         priority: parseInt(priority.toString()),
       };
-      console.log(`Sending to ${config.ntfyServer}...\n${JSON.stringify(data, null, 2)}`);
-      axios.post(config.ntfyServer, data);
+      console.log(
+        `Sending to ${config.ntfyServer}...\n${JSON.stringify(data, null, 2)}`,
+      );
+      axios.post(config.ntfyServer, data, {
+        headers: {
+          "Authorization": "Bearer " + ntfyToken,
+        },
+      });
     });
 
     ctx.body = "tnx alertmanager";
