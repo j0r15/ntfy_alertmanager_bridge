@@ -81,7 +81,7 @@ router
       );
       axios.post(config.ntfyServer, data, {
         headers: {
-          "Authorization": "Bearer " + ntfyToken,
+          "Authorization": "Bearer " + config.ntfyToken,
         },
       });
     });

@@ -36,6 +36,7 @@ The [docker-compose.yml](docker-compose.yml) contains a prometheus+alertmanager+
       - 30000:30000
     environment:
       - NTFY_SERVER_ADDRESS=http://ntfy:80
+      - NTFY_TOKEN=<your_token_here>
 
 ...
 ```
