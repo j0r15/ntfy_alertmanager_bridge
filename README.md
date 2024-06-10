@@ -14,7 +14,7 @@ that receives the each individual prometheus [alert object](https://prometheus.i
 receivers:
   - name: "ntfy-servers"
     webhook_configs:
-      - url: http://ntfy_alertmanager_bridge:30000/ntfy_alert?topic=.labels.topic&title=.annotations.summary&priority=.labels.priority|tonumber
+      - url: http://ntfy_alertmanager_bridge:30000/ntfy_alert
         send_resolved: true
         max_alerts: 0
 ...
@@ -37,6 +37,7 @@ The [docker-compose.yml](docker-compose.yml) contains a prometheus+alertmanager+
     environment:
       - NTFY_SERVER_ADDRESS=http://ntfy:80
       - NTFY_TOKEN=<your_token_here>
+      - NTFY_TOPIC=<your_topic_here>
 
 ...
 ```
