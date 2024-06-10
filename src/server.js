@@ -1,18 +1,20 @@
 const fs = require("fs");
-const axios = require("axios");
 const os = require("os");
 const path = require("path");
 const Koa = require("koa");
 const Router = require("@koa/router");
 const bodyParser = require("koa-bodyparser");
-const { execSync } = require("child_process");
 
 const config = {
   port: process.env.PORT || 30000,
   ntfyServer: process.env.NTFY_SERVER_ADDRESS || "http://localhost:30001",
   ntfyToken: process.env.NTFY_TOKEN || undefined,
+  ntfyTopic: process.env.NTFY_TOPIC || undefined,
   tempFolderPath: undefined,
 };
+
+if (!config.ntfyTopic) throw new Error("Topic is undefined");
+if (!config.ntfyToken) throw new Error("Token is undefined");
 
 fs.mkdtemp(
   path.join(os.tmpdir(), "ntfy_alertmanager_bridge"),
@@ -26,10 +28,6 @@ fs.mkdtemp(
 const app = new Koa();
 app.use(bodyParser());
 const router = new Router();
-
-function cleanShellOutput(source) {
-  return source.trimEnd("\r\n").replaceAll('"', "");
-}
 
 function logIncomingRequest(ctx) {
   const incoming = {
@@ -55,33 +53,18 @@ router
   .post("/ntfy_alert", (ctx, next) => {
     logIncomingRequest(ctx);
     ctx.request.body.alerts.forEach((x) => {
-      const tempAlertFilePathForJq = `tmp-alert.json`;
-      fs.writeFileSync(tempAlertFilePathForJq, JSON.stringify(x), {});
-
-      const topic = execSync(
-        `jq -r "${ctx.query.topic}" ${tempAlertFilePathForJq}`,
-      );
-      const title = execSync(
-        `jq -r "${ctx.query.title}" ${tempAlertFilePathForJq}`,
-      );
-      const priority = execSync(
-        `jq -r "${ctx.query.priority}" ${tempAlertFilePathForJq}`,
-      );
-      const data = {
-        topic: cleanShellOutput(topic.toString()),
-        title: cleanShellOutput(title.toString()),
-        message: `${x.labels.job}
-        ${x.labels.alertname}
-        ${x.annotations.description}`,
-        tags: [],
-        priority: parseInt(priority.toString()),
-      };
-      console.log(
-        `Sending to ${config.ntfyServer}...\n${JSON.stringify(data, null, 2)}`,
-      );
-      axios.post(config.ntfyServer, data, {
+      console.log(`Sending to ${config.ntfyServer}...`);
+      fetch(config.ntfyServer, {
+        method: "POST",
+        body: JSON.stringify({
+          "topic": config.ntfyTopic,
+          "message": x.annotations.description,
+          "title": x.labels.alertname,
+          "tags": ["warning", "cd"],
+          "priority": 4,
+        }),
         headers: {
-          "Authorization": "Bearer " + config.ntfyToken,
+          "Authorization": `Bearer ${config.ntfyToken}`,
         },
       });
     });
