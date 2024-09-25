@@ -57,7 +57,7 @@ router
         "topic": config.ntfyTopic,
         "message": x.annotations.description,
         "title": x.labels.alertname,
-        "tags": x.labels.tags,
+        "tags": x.annotations.tags,
         "priority": 4,
       })
 
@@ -67,7 +67,7 @@ router
           "topic": config.ntfyTopic,
           "message": x.annotations.description,
           "title": x.labels.alertname,
-          "tags": x.labels.tags,
+          "tags": [x.annotations.tags],
           "priority": 4,
         }),
         headers: {
