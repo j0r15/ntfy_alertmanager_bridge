@@ -39,8 +39,7 @@ function logIncomingRequest(ctx) {
   const now = new Date();
   const logFileName = path.join(
     config.tempFolderPath,
-    `req-${now.getFullYear()}-${
-      now.getMonth() + 1
+    `req-${now.getFullYear()}-${now.getMonth() + 1
     }-${now.getDate()}T${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}.log`,
   );
   fs.writeFileSync(logFileName, serialized);
@@ -54,13 +53,21 @@ router
     logIncomingRequest(ctx);
     ctx.request.body.alerts.forEach((x) => {
       console.log(`Sending to ${config.ntfyServer}...`);
+      console.log({
+        "topic": config.ntfyTopic,
+        "message": x.annotations.description,
+        "title": x.labels.alertname,
+        "tags": x.labels.tags,
+        "priority": 4,
+      })
+
       fetch(config.ntfyServer, {
         method: "POST",
         body: JSON.stringify({
           "topic": config.ntfyTopic,
           "message": x.annotations.description,
           "title": x.labels.alertname,
-          "tags": ["warning", "cd"],
+          "tags": x.labels.tags,
           "priority": 4,
         }),
         headers: {
