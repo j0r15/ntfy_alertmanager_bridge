@@ -5,7 +5,8 @@ A basic alertmanager bridge to ntfy. Currently, you can pass a `jq` selector for
 - ntfy topic
 - ntfy title
 - ntfy priority
-- // TODO: ntfy message
+- ntfy message
+- ntfy tags / emoji's
 
 that receives the each individual prometheus [alert object](https://prometheus.io/docs/alerting/latest/notifications/#alert) in the [alertmanager webhook config](alertmanager/alertmanager/config.yml):
 
@@ -20,6 +21,34 @@ receivers:
 ...
 ```
 
+alert.alerts
+
+```
+groups:
+- name: Nodes
+  rules:
+    - alert: InstanceDown
+      expr: up == 0
+      for: 1m
+      annotations:
+        title: 'Instance {{ $labels.instance }} down'
+        description: '{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes.'
+        tags: 'rotating_light' # emojiiii for clearity
+      labels:
+        severity: 'critical'
+- name: Services
+  rules:
+  - alert: ServiceDown
+    expr: probe_success == 0
+    for: 1m
+    annotations:
+      title: 'Service running on {{ $labels.instance }} is down'
+      description: '{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes.'
+      tags: 'warning,rotating_light' #multiple tags are a thing
+    labels:
+      severity: 'critical'
+```
+
 which will result in a notification like so:
 
 ![example of notification](documentation/example-notification.png "Example notification")
@@ -30,8 +59,8 @@ The [docker-compose.yml](docker-compose.yml) contains a prometheus+alertmanager+
 ...
 
   ntfy_alertmanager_bridge:
-    image: ghcr.io/atable/ntfy_alertmanager_bridge:main
-    container_name: ntfy_alertmanager_bridge_from_registry
+    image: ghcr.io/j0r15/ntfy_alertmanager_bridge:main
+    container_name: ntfy_alertmanager_bridge 
     ports:
       - 30000:30000
     environment:
@@ -41,13 +70,3 @@ The [docker-compose.yml](docker-compose.yml) contains a prometheus+alertmanager+
 
 ...
 ```
-
-Do note this is just a prototype, it works there has not been effort to make it production friendly. A sample payload of what alertmanager sends is [available here](documentation/sample-alert.json).
-
-## Development
-
-```sh
-docker-compose up
-```
-
-Navigate to `http://localhost:30001/ntfy_alertmanager_bridge_topic`

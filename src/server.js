@@ -60,7 +60,6 @@ router
         "tags": x.annotations.tags,
         "priority": 4,
       })
-
       fetch(config.ntfyServer, {
         method: "POST",
         body: JSON.stringify({

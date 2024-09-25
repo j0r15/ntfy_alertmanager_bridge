@@ -1,22 +1,23 @@
 groups:
-  - name: SimpleAlerts
-    rules:
-      - alert: PrometheusJobMissing
-        expr: absent(up{job="prometheus"})
-        for: 0m
-        labels:
-          priority: 1
-          topic: ntfy_alertmanager_bridge_topic
-        annotations:
-          summary: Prometheus job missing (instance {{ $labels.instance }})
-          description: "A Prometheus job has disappeared\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-      - alert: PrometheusTargetMissing
-        expr: up == 0
-        for: 0m
-        labels:
-          topic: ntfy_alertmanager_bridge_topic
-          priority: 4
-        annotations:
-          summary: Prometheus target missing (instance {{ $labels.instance }})
-          description: "A Prometheus target has disappeared. An exporter might be crashed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+- name: Nodes
+  rules:
+    - alert: InstanceDown
+      expr: up == 0
+      for: 1m
+      annotations:
+        title: 'Instance {{ $labels.instance }} down'
+        description: '{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes.'
+        tags: 'rotating_light'
+      labels:
+        severity: 'critical'
+- name: Services
+  rules:
+  - alert: ServiceDown
+    expr: probe_success == 0
+    for: 1m
+    annotations:
+      title: 'Service running on {{ $labels.instance }} is down'
+      description: '{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 5 minutes.'
+      tags: 'warning,rotating_light'
+    labels:
+      severity: 'critical'
