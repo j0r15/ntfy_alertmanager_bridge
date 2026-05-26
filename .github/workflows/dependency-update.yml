@@ -1,0 +1,45 @@
+name: Dependency Updates
+
+on:
+  schedule:
+    # Run weekly (Sunday at 00:00 UTC). Adjust cron as needed.
+    - cron: "0 0 * * 0"
+  workflow_dispatch:
+
+# Required permissions for Renovate to create branches and pull requests.
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  renovate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Self-hosted Renovate
+        uses: renovatebot/github-action@v41.0.20
+        with:
+          # Use RENOVATE_TOKEN if set, otherwise fall back to GITHUB_TOKEN.
+          # For GitHub: GITHUB_TOKEN works for the same repo.
+          # For Gitea/Forgejo: set RENOVATE_TOKEN to a personal access token.
+          token: ${{ secrets.RENOVATE_TOKEN || secrets.GITHUB_TOKEN }}
+        env:
+          # === Platform Configuration ===
+          # --- GitHub (default) ---
+          RENOVATE_PLATFORM: github
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
+
+          # --- Gitea / Forgejo ---
+          # To switch, comment out the GitHub lines above and uncomment below.
+          # Also set secrets.RENOVATE_TOKEN to your Gitea/Forgejo PAT.
+          # RENOVATE_PLATFORM: gitea
+          # RENOVATE_ENDPOINT: https://your-forgejo-instance.com/api/v1
+          # RENOVATE_REPOSITORIES: ${{ github.repository }}
+
+          # Avoid waiting for an onboarding PR.
+          RENOVATE_ONBOARDING: "false"
+
+          # Git author for the commits Renovate creates.
+          RENOVATE_GIT_AUTHOR: "Renovate Bot <renovate@localhost>"
